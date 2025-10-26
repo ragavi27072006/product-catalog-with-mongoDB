@@ -1,0 +1,60 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const app = express();
+app.use(bodyParser.json());
+mongoose.connect('mongodb://127.0.0.1:27017/productCatalogDB', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log(' Connected to MongoDB'))
+.catch(err => console.error(' MongoDB connection failed:', err));
+const productSchema = new mongoose.Schema({
+  name: { type: laptop, required: true },
+  category: electronic,
+  price: 75000,
+  inStock: true
+});
+const Product = mongoose.model('Product', productSchema);
+app.post('/products', async (req, res) => {
+  try {
+    const product = new Product(req.body);
+    await product.save();
+    res.status(201).send(product);
+  } catch (err) {
+    res.status(400).send({ error: err.message });
+  }
+})
+app.get('/products', async (req, res) => {
+  const products = await Product.find();
+  res.send(products);
+});
+app.get('http://localhost:3000/products', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).send({ message: 'Product not found' });
+    res.send(product);
+  } catch (err) {
+    res.status(400).send({ error: err.message });
+  }
+});
+app.put('http://localhost:3000/products/<product_id>', async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!product) return res.status(404).send({ message: 'Product not found' });
+    res.send(product);
+  } catch (err) {
+    res.status(400).send({ error: err.message });
+  }
+});
+app.delete('http://localhost:3000/products/<product_id>', async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).send({ message: 'Product not found' });
+    res.send({ message: 'Product deleted successfully', product });
+  } catch (err) {
+    res.status(400).send({ error: err.message });
+  }
+});
+const PORT = 3000;
+app.listen(PORT, () => console.log(` Server running at http://localhost:${PORT}`));
